@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma BI Integrada | Billetera Responsable</title>
+    <!-- Librerías Externas -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { background-color: #f8f9fa; display: flex; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { width: 270px; background-color: #1e293b; color: white; padding: 20px 0; display: flex; flex-direction: column; overflow-y: auto;}
+        .sidebar-title { color: #38bdf8; font-weight: 800; text-align: center; margin-bottom: 25px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;}
+        .sidebar .nav-link { color: #cbd5e1; margin: 4px 15px; border-radius: 6px; font-weight: 500; padding: 12px 15px; font-size: 0.9rem; transition: all 0.2s;}
+        .sidebar .nav-link:hover { background-color: #334155; color: white; transform: translateX(4px);}
+        .sidebar .nav-link.active { background-color: #0ea5e9; color: white; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); font-weight: 600;}
+        .sidebar .nav-link.powerbi-link { background-color: #eab308; color: #1e293b; font-weight: 700; margin-top: 15px;}
+        
+        .main-content { flex: 1; overflow-y: auto; padding: 35px 45px; background-color: #f1f5f9; }
+        .title-main { font-weight: 800; color: #0f172a; margin-bottom: 5px; font-size: 1.8rem;}
+        .subtitle-main { color: #64748b; font-size: 1rem; margin-bottom: 35px; }
+        
+        .card { border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: none; margin-bottom: 25px; background-color: white;}
+        .card-header { background-color: transparent; border-bottom: 1px solid #f1f5f9; padding: 20px 25px; font-weight: 700; color: #334155; font-size: 1.1rem;}
+        
+        /* Estilos del Esquema Estrella (DWH) */
+        .star-schema { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 15px; background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px dashed #cbd5e1; }
+        .db-table { background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #64748b; overflow: hidden; }
+        .db-header { background-color: #64748b; color: white; font-weight: 600; padding: 8px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; }
+        .fact-header { background-color: #6366f1 !important; font-size: 0.9rem; }
+        .fact-table { box-shadow: 0 8px 20px rgba(99,102,241,0.2) !important; border: 2px solid #6366f1 !important; transform: scale(1.02); z-index: 10; }
+        .db-body { padding: 10px; font-family: 'Consolas', monospace; font-size: 0.7rem; color: #334155; }
+        .db-field { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8fafc; }
+        .db-field:last-child { border-bottom: none; }
+        .pk-icon { color: #eab308; } .fk-icon { color: #ef4444; } .type-text { color: #6366f1; margin-left: auto; font-size: 0.65rem; }
+        
+        /* Animación Fade In */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-title"><i class="fa-solid fa-server me-2"></i> Billetera Responsable<br><span style="font-size: 0.8rem; color: #94a3b8; font-weight: normal;">Plataforma BI</span></div>
+        
+        <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+            <div class="px-3 mb-2 small text-uppercase fw-bold" style="color: #64748b; font-size: 0.7rem; margin-top: 10px;">Ingesta & Procesamiento</div>
+            <button class="nav-link active text-start" id="tab1-tab" data-bs-toggle="pill" data-bs-target="#tab1" type="button"><i class="fa-solid fa-file-csv me-2 w-20px"></i> 1. Fuentes de Datos</button>
+            <button class="nav-link text-start" id="tab2-tab" data-bs-toggle="pill" data-bs-target="#tab2" type="button"><i class="fa-solid fa-hard-drive me-2"></i> 2. Staging Area</button>
+            <button class="nav-link text-start" id="tab3-tab" data-bs-toggle="pill" data-bs-target="#tab3" type="button"><i class="fa-solid fa-gears me-2"></i> 3. Proceso ETL</button>
+            
+            <div class="px-3 mb-2 small text-uppercase fw-bold" style="color: #64748b; font-size: 0.7rem; margin-top: 20px;">Almacenamiento & Modelado</div>
+            <button class="nav-link text-start" id="tab4-tab" data-bs-toggle="pill" data-bs-target="#tab4" type="button"><i class="fa-solid fa-cubes me-2"></i> 4. Data Warehouse</button>
+            
+            <div class="px-3 mb-2 small text-uppercase fw-bold" style="color: #64748b; font-size: 0.7rem; margin-top: 20px;">Analítica & Semántica</div>
+            <button class="nav-link text-start" id="tab5-tab" data-bs-toggle="pill" data-bs-target="#tab5" type="button"><i class="fa-solid fa-brain me-2"></i> 5. Capa de IA</button>
+            <button class="nav-link text-start" id="tab6-tab" data-bs-toggle="pill" data-bs-target="#tab6" type="button"><i class="fa-solid fa-chart-pie me-2"></i> 6. Capa Semántica</button>
+            
+            <hr class="border-secondary mx-3 mt-4">
+            <!-- Enlace directo a tu archivo local .pbix -->
+            <a href="Dashboard_BilleteraR.pbix" target="_blank" class="nav-link powerbi-link text-center shadow-sm" title="Abrir dashboard en Power BI Desktop">
+            <i class="fa-solid fa-chart-column me-2"></i> 7. Power BI
+            </a>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="main-content tab-content" id="v-pills-tabContent">
+        
+        <!-- CAPA 1: FUENTES DE DATOS -->
+        <div class="tab-pane fade show active" id="tab1">
+            <h2 class="title-main">1. Fuentes de Datos</h2>
+            <p class="subtitle-main">Captura de información financiera mediante Excel Histórico y simuladores.</p>
+            
+            <div class="card">
+                <div class="card-header"><i class="fa-solid fa-upload text-primary me-2"></i> Extracción de Excel (Raw Data)</div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Sube el archivo CSV que contiene las transacciones en crudo.</p>
+                    <form id="formCsv" enctype="multipart/form-data">
+                        <div class="input-group input-group-lg mb-3">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-file-excel text-success"></i></span>
+                            <input class="form-control" type="file" id="archivoCsv" name="archivoCsv" accept=".csv" required>
+                            <button type="submit" class="btn btn-primary fw-bold px-4">Cargar Origen</button>
+                        </div>
+                    </form>
+                    <div id="msgCsv"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA 2: STAGING AREA -->
+        <div class="tab-pane fade" id="tab2">
+            <h2 class="title-main">2. Staging Area (Landing Zone)</h2>
+            <p class="subtitle-main">Almacenamiento temporal de datos crudos (BilleteraOLTP) previos a la transformación.</p>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-start border-warning border-4">
+                        <div class="card-body">
+                            <h5 class="fw-bold"><i class="fa-solid fa-database text-warning me-2"></i> Base de Datos Transaccional</h5>
+                            <p class="text-muted mt-3">Los datos extraídos en la Capa 1 reposan temporalmente en MySQL sin limpieza.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA 3: PROCESO ETL -->
+        <div class="tab-pane fade" id="tab3">
+            <h2 class="title-main">3. Proceso ETL</h2>
+            <p class="subtitle-main">Extracción, Transformación (Limpieza, Reglas de Negocio) y Carga.</p>
+            
+            <div class="card text-center py-5 shadow border-0" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+                <div class="card-body">
+                    <i class="fa-solid fa-cogs fa-4x text-primary mb-4"></i>
+                    <h4 class="fw-bold">Motor de Transformación SQL</h4>
+                    <p class="text-muted w-75 mx-auto mb-4">El Procedimiento Almacenado evalúa los datos del Staging Area y calcula los ratios.</p>
+                    <button id="btnEtl" class="btn btn-primary btn-lg fw-bold px-5 shadow-sm rounded-pill">
+                        <i class="fa-solid fa-bolt me-2"></i> Ejecutar Proceso ETL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA 4: DATA WAREHOUSE (ACTUALIZADO Y OCULTO POR DEFECTO) -->
+        <div class="tab-pane fade" id="tab4">
+            <h2 class="title-main">4. Data Warehouse</h2>
+            <p class="subtitle-main">Modelo dimensional consolidado (Esquema Estrella BilleteraDW).</p>
+            
+            <div class="card border-0">
+                <div class="card-body p-4">
+                    
+                    <!-- Contenedor Vacío (Se muestra ANTES del ETL) -->
+                    <div id="dwh-empty-state" class="text-center py-5">
+                        <i class="fa-solid fa-cubes fa-4x text-secondary mb-3 opacity-25"></i>
+                        <h5 class="fw-bold text-muted">Data Warehouse Inactivo</h5>
+                        <p class="text-muted">Ve a la Capa 3 y ejecuta el proceso ETL para popular y visualizar el Modelo Estrella.</p>
+                    </div>
+
+                    <!-- Contenedor del DWH (Se muestra DESPUÉS del ETL) -->
+                    <div id="dwh-schema-container" style="display: none;">
+                        <div class="alert alert-success border-0 shadow-sm mb-4">
+                            <i class="fa-solid fa-circle-check me-2"></i> <strong>Sincronización Exitosa:</strong> Las tablas dimensionales han sido actualizadas con la última carga de datos.
+                        </div>
+                        
+                        <div class="star-schema fade-in">
+                            <!-- FILA 1 -->
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_usuario</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_usuario <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> edad <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> sexo <span class="type-text">VARCHAR(20)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> rol <span class="type-text">VARCHAR(20)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> fecha_intervencion_rag <span class="type-text">DATE</span></div>
+                                </div>
+                            </div>
+                            
+                            <div></div> <!-- Espacio central -->
+
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_rangomonto</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_rango <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> rango_gasto <span class="type-text">VARCHAR(20)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_minimo <span class="type-text">DECIMAL(10,2)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_maximo <span class="type-text">DECIMAL(10,2)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- FILA 2 -->
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_categoria</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_categoria <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> nombre_categoria <span class="type-text">VARCHAR(100)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> tipo_categoria <span class="type-text">VARCHAR(50)</span></div>
+                                </div>
+                            </div>
+
+                            <div class="db-table fact-table">
+                                <div class="db-header fact-header"><i class="fa-solid fa-database"></i> fact_finanzas</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_transaccion <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_usuario <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_categoria <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_medio_pago <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_tiempo <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_estado <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-link fk-icon"></i> id_rango <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_ingreso <span class="type-text">DECIMAL(10,2)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_gasto <span class="type-text">DECIMAL(10,2)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_ahorro <span class="type-text">DECIMAL(10,2)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> monto_deuda <span class="type-text">DECIMAL(10,2)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> ratio_endeudamiento <span class="type-text">DECIMAL(5,2)</span></div>
+                                    <div class="db-field fw-bold"><i class="fa-solid fa-bolt text-warning" style="font-size:0.5rem;"></i> probabilidad_riesgo <span class="type-text">DECIMAL(5,4)</span></div>
+                                </div>
+                            </div>
+
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_mediopago</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_medio_pago <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> canal_pago <span class="type-text">VARCHAR(50)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> tipo_canal <span class="type-text">VARCHAR(50)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- FILA 3 -->
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_tiempo</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_tiempo <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> fecha <span class="type-text">DATE</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> mes <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> trimestre <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> anio <span class="type-text">INT(11)</span></div>
+                                </div>
+                            </div>
+                            
+                            <div></div> <!-- Espacio central -->
+
+                            <div class="db-table">
+                                <div class="db-header"><i class="fa-solid fa-table"></i> dim_estadofinanciero</div>
+                                <div class="db-body">
+                                    <div class="db-field"><i class="fa-solid fa-key pk-icon"></i> id_estado <span class="type-text">INT(11)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> estado <span class="type-text">VARCHAR(20)</span></div>
+                                    <div class="db-field"><i class="fa-solid fa-diamond text-secondary" style="font-size:0.5rem;"></i> descripcion <span class="type-text">VARCHAR(255)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA 5: CAPA DE IA (PREDICCIONES Y RAG) - RESTAURADA Y MEJORADA -->
+        <div class="tab-pane fade" id="tab5">
+            <h2 class="title-main">5. Capa de IA (Predicciones)</h2>
+            <p class="subtitle-main">Python ML Engine y Asistente RAG.</p>
+            
+            <div class="row g-4 align-items-stretch">
+                <!-- KPI 5: Precisión del Modelo -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-top border-primary border-4 shadow-sm bg-white">
+                        <div class="card-header bg-white border-0 pt-4"><i class="fa-solid fa-network-wired text-primary me-2"></i> Predicción de Riesgo (Árbol de Decisión)</div>
+                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                            <div style="position: relative; height: 180px; width: 100%; display: flex; justify-content: center; align-items: flex-end;">
+                                <canvas id="chartKpi5"></canvas>
+                                <h2 class="fw-bold text-dark position-absolute mb-2" id="val-kpi5" style="bottom: 0;">0.0%</h2>
+                            </div>
+                            <p class="text-muted fw-bold mt-3 mb-0 small">Exactitud del Modelo Predictivo (KPI 5)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KPI 6: Impacto RAG -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-top border-success border-4 shadow-sm bg-white">
+                        <div class="card-header bg-white border-0 pt-4"><i class="fa-solid fa-robot text-success me-2"></i> Impacto Asistente IA (Motor RAG)</div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h4 class="fw-bold text-success mb-0" id="val-kpi6">+0.0%</h4>
+                                    <p class="text-muted fw-bold mb-0" style="font-size: 0.8rem;">Ahorro Post-Intervención (KPI 6)</p>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 160px; width: 100%;">
+                                <canvas id="chartKpi6"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA 6: CAPA SEMÁNTICA (KPIs - ALINEACIÓN CORREGIDA) -->
+        <div class="tab-pane fade" id="tab6">
+            <h2 class="title-main">6. Capa Semántica (Modelo de KPIs)</h2>
+            <p class="subtitle-main">Medidas KPI, Reglas de Negocio y Catálogo Semántico.</p>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 bg-white h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle me-3"><i class="fa-solid fa-piggy-bank fa-xl"></i></div>
+                            <div>
+                                <h6 class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">KPI 2: Capacidad de Ahorro Promedio</h6>
+                                <h4 class="fw-bold mb-0 text-dark" id="val-kpi2">S/ 0.00</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 bg-white h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle me-3"><i class="fa-solid fa-mobile-screen fa-xl"></i></div>
+                            <div class="w-100">
+                                <h6 class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">KPI 4: Adopción Digital</h6>
+                                <h4 class="fw-bold mb-0 text-dark" id="badge-kpi4">0% (Yape/Plin)</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ajuste estructural con align-items-stretch para forzar misma altura -->
+            <div class="row g-4 align-items-stretch">
+                <div class="col-lg-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="fw-bold m-0"><i class="fa-solid fa-chart-column text-danger me-2"></i> KPI 1: Ratio de Endeudamiento</h6></div>
+                        <div class="card-body">
+                            <!-- El div contenedor evita que el canvas crezca y rompa el diseño -->
+                            <div style="position: relative; height: 300px; width: 100%;">
+                                <canvas id="chartKpi1"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="fw-bold m-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> KPI 3: Distribución por Categoría</h6></div>
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <!-- Limitamos también la altura máxima de la Dona -->
+                            <div style="position: relative; height: 300px; width: 100%;">
+                                <canvas id="chartKpi3"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            
+            // 1. Cargar CSV
+            const formCsv = document.getElementById('formCsv');
+            if (formCsv) {
+                formCsv.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const btnSubmit = this.querySelector('button[type="submit"]');
+                    const originalText = btnSubmit.innerHTML;
+                    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...';
+                    btnSubmit.disabled = true;
+
+                    let formData = new FormData(this);
+                    fetch('ajax/importar_csv.php', { method: 'POST', body: formData })
+                    .then(res => res.json())
+                    .then(data => {
+                        btnSubmit.innerHTML = originalText;
+                        btnSubmit.disabled = false;
+                        let alertClass = data.status === 'success' ? 'alert-success' : 'alert-danger';
+                        document.getElementById('msgCsv').innerHTML = `<div class="alert ${alertClass} mt-3 small fw-bold">${data.message}</div>`;
+                        if(data.status === 'success') this.reset();
+                    })
+                    .catch(err => {
+                        btnSubmit.innerHTML = originalText;
+                        btnSubmit.disabled = false;
+                        document.getElementById('msgCsv').innerHTML = `<div class="alert alert-danger mt-3 small fw-bold">Error crítico al cargar el CSV.</div>`;
+                    });
+                });
+            }
+
+            // 2. Ejecutar ETL y Mostrar DWH
+            const btnEtl = document.getElementById('btnEtl');
+            if (btnEtl) {
+                btnEtl.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Transformando...';
+                    this.disabled = true;
+
+                    fetch('ajax/procesar_etl.php')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                        if(data.status === 'success') {
+                            cargarGraficos(); 
+                            
+                            // Mostrar visualmente el DWH
+                            document.getElementById('dwh-empty-state').style.display = 'none';
+                            document.getElementById('dwh-schema-container').style.display = 'block';
+                            
+                            alert("ETL Completado: Data Warehouse y Capa Semántica actualizados.");
+                        } else {
+                            alert("Error: " + data.message);
+                        }
+                    }).catch(err => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                        alert("Error al conectar con el servidor ETL.");
+                    });
+                });
+            }
+
+            // 3. Pintar Gráficos (Capas 5 y 6)
+            let chartKpi1, chartKpi3, chartKpi5, chartKpi6;
+            
+            function cargarGraficos() {
+                fetch('ajax/get_kpi_data.php')
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'error') return;
+
+                    // Datos Capa 6
+                    document.getElementById('val-kpi2').innerText = 'S/ ' + data.kpi2;
+                    document.getElementById('badge-kpi4').innerText = data.kpi4.porcentaje + '% (Yape/Plin)';
+                    
+                    // Datos Capa 5
+                    document.getElementById('val-kpi5').innerText = data.kpi5 + '%';
+                    document.getElementById('val-kpi6').innerText = (data.kpi6.porcentaje > 0 ? '+' : '') + data.kpi6.porcentaje + '%';
+
+                    // Destruir gráficos previos
+                    if(chartKpi1) chartKpi1.destroy(); if(chartKpi3) chartKpi3.destroy();
+                    if(chartKpi5) chartKpi5.destroy(); if(chartKpi6) chartKpi6.destroy();
+
+                    // KPI 1 (Capa 6) - Barras Verticales
+                    chartKpi1 = new Chart(document.getElementById('chartKpi1').getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: data.kpi1.labels, datasets: [{ label: '% Deuda', data: data.kpi1.data, backgroundColor: '#ef4444', borderRadius: 4 }] },
+                        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+
+                    // KPI 3 (Capa 6) - Dona
+                    chartKpi3 = new Chart(document.getElementById('chartKpi3').getContext('2d'), {
+                        type: 'doughnut',
+                        data: { labels: data.kpi3.labels, datasets: [{ data: data.kpi3.data, backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#cbd5e1'] }] },
+                        options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 11} } } }, cutout: '65%' }
+                    });
+
+                    // KPI 5 (Capa 5) - Gauge (Semicírculo para Predicción IA)
+                    chartKpi5 = new Chart(document.getElementById('chartKpi5').getContext('2d'), {
+                        type: 'doughnut',
+                        data: { labels: ['Precisión', 'Margen Error'], datasets: [{ data: [data.kpi5, 100 - data.kpi5], backgroundColor: ['#0ea5e9', '#e2e8f0'], borderWidth: 0 }] },
+                        options: { rotation: 270, circumference: 180, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, maintainAspectRatio: false }
+                    });
+
+                    // KPI 6 (Capa 5) - Barras Horizontales Comparativas (RAG)
+                    chartKpi6 = new Chart(document.getElementById('chartKpi6').getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: ['Ahorro Sin IA', 'Ahorro Post-RAG'], datasets: [{ data: [data.kpi6.pre, data.kpi6.post], backgroundColor: ['#94a3b8', '#10b981'], borderRadius: 4 }] },
+                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+                    });
+                });
+            }
+
+            // Disparar carga de gráficos al abrir las capas 5 y 6
+            document.getElementById('tab5-tab').addEventListener('click', cargarGraficos);
+            document.getElementById('tab6-tab').addEventListener('click', cargarGraficos);
+        });
+    </script>
+</body>
+</html>
