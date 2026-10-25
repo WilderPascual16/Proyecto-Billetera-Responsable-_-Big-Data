@@ -352,7 +352,7 @@
                     btnSubmit.disabled = true;
 
                     let formData = new FormData(this);
-                    fetch('ajax/importar_csv.php', { method: 'POST', body: formData })
+                    fetch('backend/controllers/importar_csv.php', { method: 'POST', body: formData })
                     .then(res => res.json())
                     .then(data => {
                         btnSubmit.innerHTML = originalText;
@@ -377,7 +377,7 @@
                     this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Transformando...';
                     this.disabled = true;
 
-                    fetch('ajax/procesar_etl.php')
+                    fetch('backend/controllers/procesar_etl.php')
                     .then(res => res.json())
                     .then(data => {
                         this.innerHTML = originalText;
@@ -405,7 +405,7 @@
             let chartKpi1, chartKpi3, chartKpi5, chartKpi6;
             
             function cargarGraficos() {
-                fetch('ajax/get_kpi_data.php')
+                fetch('backend/controllers/get_kpi_data.php')
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === 'error') return;
@@ -457,5 +457,6 @@
             document.getElementById('tab6-tab').addEventListener('click', cargarGraficos);
         });
     </script>
+    <script src="frontend/js/main.js"></script>
 </body>
 </html>

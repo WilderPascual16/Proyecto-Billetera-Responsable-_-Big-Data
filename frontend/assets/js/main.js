@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function() {
         formCsv.addEventListener('submit', function(e) {
             e.preventDefault();
             let formData = new FormData(this);
-            fetch('ajax/importar_csv.php', { method: 'POST', body: formData })
+            fetch('backend/controllers/importar_csv.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 document.getElementById('msgCsv').innerHTML = `<div class="alert alert-success fw-bold"><i class="fa-solid fa-check-circle me-2"></i>${data.message}</div>`;
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function() {
             this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Procesando...';
             this.disabled = true;
 
-            fetch('ajax/procesar_etl.php')
+            fetch('backend/controllers/procesar_etl.php')
             .then(res => res.json())
             .then(data => {
                 this.innerHTML = originalText;
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // 3. Función para pintar gráficos de los KPIs (Chart.js)
     function cargarGraficos() {
-        fetch('ajax/get_kpi_data.php')
+        fetch('backend/controllers/get_kpi_data.php')
         .then(res => res.json())
         .then(data => {
             if (chartRatio) chartRatio.destroy();
